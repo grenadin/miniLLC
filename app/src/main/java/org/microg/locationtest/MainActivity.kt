@@ -30,6 +30,7 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polygon
+import org.osmdroid.views.overlay.ScaleBarOverlay
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
@@ -41,8 +42,14 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var mapBug: MapView
     private lateinit var mapFix: MapView
+    private lateinit var scaleBarBug: ScaleBarOverlay
+    private lateinit var scaleBarFix: ScaleBarOverlay
+    private lateinit var pulseBug: PulseOverlay
+    private lateinit var pulseFix: PulseOverlay
     private lateinit var tvBugInfo: TextView
     private lateinit var tvFixInfo: TextView
+    private lateinit var tvZoomLevelBug: TextView
+    private lateinit var tvZoomLevelFix: TextView
     private lateinit var tvStatus: TextView
 
     private lateinit var pageMap: View
@@ -50,8 +57,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnTabMap: TextView
     private lateinit var btnTabLog: TextView
     private lateinit var tvRecordingStatus: TextView
-    private lateinit var btnOutdoorToggle: TextView
     private lateinit var btnRecord: TextView
+    private lateinit var btnShare: View
+    private lateinit var btnDelete: TextView
     private lateinit var tvLogViewer: TextView
     private lateinit var scrollLogViewer: ScrollView
 
@@ -60,7 +68,6 @@ class MainActivity : AppCompatActivity() {
     private val miniLLC = MiniLastLocationCapsule()
 
     private var lastLoggedHasBug = false
-    private var isOutdoor = false
     private var isRecording = false
     private var recordWriter: BufferedWriter? = null
     private var recordFile: File? = null
@@ -122,6 +129,8 @@ class MainActivity : AppCompatActivity() {
         mapFix = findViewById(R.id.mapFine)
         tvBugInfo = findViewById(R.id.tvCoarseInfo)
         tvFixInfo = findViewById(R.id.tvFineInfo)
+        tvZoomLevelBug = findViewById(R.id.tvZoomLevelBug)
+        tvZoomLevelFix = findViewById(R.id.tvZoomLevelFix)
         tvStatus = findViewById(R.id.tvStatus)
 
         pageMap = findViewById(R.id.pageMap)
@@ -129,14 +138,36 @@ class MainActivity : AppCompatActivity() {
         btnTabMap = findViewById(R.id.btnTabMap)
         btnTabLog = findViewById(R.id.btnTabLog)
         tvRecordingStatus = findViewById(R.id.tvRecordingStatus)
-        btnOutdoorToggle = findViewById(R.id.btnOutdoorToggle)
         btnRecord = findViewById(R.id.btnRecord)
+        btnShare = findViewById(R.id.btnShare)
+        btnDelete = findViewById(R.id.btnDelete)
         tvLogViewer = findViewById(R.id.tvLogViewer)
         scrollLogViewer = findViewById(R.id.scrollLogViewer)
 
-        setupMap(mapBug)
-        setupMap(mapFix)
-        linkMapZoom(mapBug, mapFix)
+        scaleBarBug = setupMap(mapBug)
+        scaleBarFix = setupMap(mapFix)
+        pulseBug = PulseOverlay(Color.parseColor("#E53935"))
+        pulseFix = PulseOverlay(Color.parseColor("#43A047"))
+        mapBug.overlays.add(pulseBug)
+        mapFix.overlays.add(pulseFix)
+        linkMapZoom(mapBug, mapFix) { zoom ->
+            val label = zoom.toInt().toString()
+            tvZoomLevelBug.text = label
+            tvZoomLevelFix.text = label
+        }
+
+        fun zoomBoth(delta: Double) {
+            val next = mapBug.zoomLevelDouble + delta
+            mapBug.controller.setZoom(next)
+            mapFix.controller.setZoom(next)
+            val label = next.toInt().toString()
+            tvZoomLevelBug.text = label
+            tvZoomLevelFix.text = label
+        }
+        findViewById<TextView>(R.id.btnZoomInBug).setOnClickListener { zoomBoth(+1.0) }
+        findViewById<TextView>(R.id.btnZoomOutBug).setOnClickListener { zoomBoth(-1.0) }
+        findViewById<TextView>(R.id.btnZoomInFix).setOnClickListener { zoomBoth(+1.0) }
+        findViewById<TextView>(R.id.btnZoomOutFix).setOnClickListener { zoomBoth(-1.0) }
 
         val btnCodeBug = findViewById<TextView>(R.id.btnCodeBug)
         val codePanelBug = findViewById<View>(R.id.codePanelBug)
@@ -155,15 +186,10 @@ class MainActivity : AppCompatActivity() {
         btnTabMap.setOnClickListener { showPage(isMap = true) }
         btnTabLog.setOnClickListener { showPage(isMap = false) }
 
-        btnOutdoorToggle.setOnClickListener {
-            isOutdoor = !isOutdoor
-            btnOutdoorToggle.text = if (isOutdoor) "🌳 Outdoor" else "🏠 Indoor"
-            writeRawLine(if (isOutdoor) "--- marked OUTDOOR ---" else "--- marked INDOOR ---")
-        }
-
         btnRecord.setOnClickListener { startRecording() }
-        findViewById<TextView>(R.id.btnStopRecording).setOnClickListener { stopRecording() }
-        findViewById<TextView>(R.id.btnShare).setOnClickListener { shareLastRecording() }
+        findViewById<View>(R.id.btnStopRecording).setOnClickListener { stopRecording() }
+        btnShare.setOnClickListener { shareLastRecording() }
+        btnDelete.setOnClickListener { deleteLastRecording() }
 
         locationManager = getSystemService<LocationManager>()!!
 
@@ -186,10 +212,15 @@ class MainActivity : AppCompatActivity() {
         btnTabLog.setTextColor(Color.parseColor(if (isMap) "#C9D1D9" else "#58A6FF"))
     }
 
-    private fun setupMap(map: MapView) {
+    private fun setupMap(map: MapView): ScaleBarOverlay {
         map.setTileSource(TileSourceFactory.MAPNIK)
         map.setMultiTouchControls(true)
         map.controller.setZoom(15.0)
+        val scaleBar = ScaleBarOverlay(map).apply {
+            setAlignBottom(false)
+        }
+        map.overlays.add(scaleBar)
+        return scaleBar
     }
 
     override fun onRequestPermissionsResult(
@@ -222,6 +253,8 @@ class MainActivity : AppCompatActivity() {
             recordFile = file
             pointsLogged = 0
             isRecording = true
+            btnShare.visibility = View.GONE
+            btnDelete.visibility = View.GONE
             tvLogViewer.text = ""
             tvRecordingStatus.text = "● Recording to ${file.name}"
             tvRecordingStatus.setTextColor(Color.parseColor("#F85149"))
@@ -249,6 +282,10 @@ class MainActivity : AppCompatActivity() {
         tvRecordingStatus.setTextColor(Color.parseColor("#8B949E"))
         Toast.makeText(this, "Saved: ${recordFile?.absolutePath}", Toast.LENGTH_LONG).show()
         recordWriter = null
+        if (recordFile != null && pointsLogged > 0) {
+            btnShare.visibility = View.VISIBLE
+            btnDelete.visibility = View.VISIBLE
+        }
         // recordFile is kept (not nulled) so the Share button can still send the last recording.
     }
 
@@ -265,6 +302,22 @@ class MainActivity : AppCompatActivity() {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         startActivity(Intent.createChooser(intent, "Share field test log"))
+    }
+
+    private fun deleteLastRecording() {
+        val file = recordFile
+        if (file == null || !file.exists()) {
+            Toast.makeText(this, "No recording to delete", Toast.LENGTH_SHORT).show()
+            return
+        }
+        file.delete()
+        recordFile = null
+        btnShare.visibility = View.GONE
+        btnDelete.visibility = View.GONE
+        tvRecordingStatus.text = "Not recording"
+        tvRecordingStatus.setTextColor(Color.parseColor("#8B949E"))
+        tvLogViewer.text = "No log entries yet — press REC to start."
+        Toast.makeText(this, "Deleted: ${file.name}", Toast.LENGTH_SHORT).show()
     }
 
     private fun writeRawLine(line: String) {
@@ -316,40 +369,53 @@ class MainActivity : AppCompatActivity() {
         val fixLocation = miniLLC.getLocationFixed()
 
         if (bugLocation != null) {
-            updateMap(mapBug, bugLocation, "#220066FF", "#990066FF")
+            updateMap(mapBug, bugLocation, "#1AE53935", "#80E53935", R.drawable.ic_marker_bug)
             updateInfo(tvBugInfo, bugLocation)
         }
         if (fixLocation != null) {
-            updateMap(mapFix, fixLocation, "#2200AA00", "#9900AA00")
+            updateMap(mapFix, fixLocation, "#1A43A047", "#8043A047", R.drawable.ic_marker_fix)
             updateInfo(tvFixInfo, fixLocation)
         }
+
 
         updateStatus(bugLocation, fixLocation)
     }
 
-    private fun updateMap(map: MapView, loc: Location, fillHex: String, strokeHex: String) {
+    private fun updateMap(map: MapView, loc: Location, fillHex: String, strokeHex: String, markerRes: Int) {
         val center = GeoPoint(loc.latitude, loc.longitude)
+        val scaleBar = if (map === mapBug) scaleBarBug else scaleBarFix
+        val pulse = if (map === mapBug) pulseBug else pulseFix
         map.overlays.clear()
+        map.overlays.add(scaleBar)
+        map.overlays.add(pulse)
 
         if (loc.accuracy > 0f) {
             val circle = Polygon(map).apply {
                 points = Polygon.pointsAsCircle(center, loc.accuracy.toDouble())
                 fillColor = Color.parseColor(fillHex)
                 strokeColor = Color.parseColor(strokeHex)
-                strokeWidth = 2f
+                strokeWidth = 1.5f
             }
             map.overlays.add(circle)
         }
 
+        val icon = ContextCompat.getDrawable(this, markerRes)
         val marker = Marker(map).apply {
             position = center
             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+            setIcon(icon)
             title = "${loc.provider}  ${loc.accuracy.toInt()} m"
         }
         map.overlays.add(marker)
 
         map.controller.setCenter(center)
-        if (map.zoomLevelDouble < 13.0) map.controller.setZoom(15.0)
+
+        if (loc.provider != "gps") {
+            pulse.update(center, loc.accuracy, map)
+        } else {
+            pulse.stop()
+        }
+
         map.invalidate()
     }
 
@@ -394,6 +460,8 @@ class MainActivity : AppCompatActivity() {
         if (isRecording) stopRecording()
         handler.removeCallbacks(tickRunnable)
         handler.removeCallbacks(blinkRunnable)
+        pulseBug.stop()
+        pulseFix.stop()
         locationManager.removeUpdates(gpsListener)
         locationManager.removeUpdates(networkListener)
     }

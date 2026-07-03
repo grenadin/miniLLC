@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+
+    <!-- red outer circle -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M20,1 A19,19 0 1 1 20,39 A19,19 0 1 1 20,1 Z" />
+
+    <!-- white inner circle (creates the red ring border) -->
+    <path
+        android:fillColor="#EEEEEE"
+        android:pathData="M20,4 A16,16 0 1 1 20,36 A16,16 0 1 1 20,4 Z" />
+
+    <!-- red rounded square in center -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M14,14 L26,14 Q27,14 27,15 L27,25 Q27,26 26,26 L14,26 Q13,26 13,25 L13,15 Q13,14 14,14 Z" />
+</vector>

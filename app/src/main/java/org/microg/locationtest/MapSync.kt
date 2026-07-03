@@ -6,7 +6,7 @@ import org.osmdroid.events.ZoomEvent
 import org.osmdroid.views.MapView
 
 /** Mirrors zoom level between [a] and [b] so both panels stay at the same scale. */
-fun linkMapZoom(a: MapView, b: MapView) {
+fun linkMapZoom(a: MapView, b: MapView, onZoomChanged: ((Double) -> Unit)? = null) {
     var syncing = false
 
     fun listenerFor(source: MapView, target: MapView) = object : MapListener {
@@ -15,7 +15,9 @@ fun linkMapZoom(a: MapView, b: MapView) {
         override fun onZoom(event: ZoomEvent?): Boolean {
             if (syncing) return false
             syncing = true
-            target.controller.setZoom(source.zoomLevelDouble)
+            val zoom = source.zoomLevelDouble
+            target.controller.setZoom(zoom)
+            onZoomChanged?.invoke(zoom)
             syncing = false
             return false
         }
