@@ -89,7 +89,7 @@ class MainActivity : AppCompatActivity() {
         override fun onLocationChanged(location: Location) {
             miniLLC.updateFineLocation(location)
             refreshPanels()
-            writeLogLine("GPS", location)
+            writeLocationPair()
         }
         override fun onProviderEnabled(provider: String) {
             writeRawLine("GPS provider ENABLED")
@@ -103,7 +103,7 @@ class MainActivity : AppCompatActivity() {
         override fun onLocationChanged(location: Location) {
             miniLLC.updateCoarseLocation(location)
             refreshPanels()
-            writeLogLine("NETWORK", location)
+            writeLocationPair()
         }
         override fun onProviderEnabled(provider: String) {
             writeRawLine("NETWORK provider ENABLED")
@@ -215,7 +215,7 @@ class MainActivity : AppCompatActivity() {
             val writer = BufferedWriter(FileWriter(file))
             writer.write("miniLLC field test log — device=${android.os.Build.MODEL} start=${timeFormat.format(Date())}")
             writer.newLine()
-            writer.write("format: time,source,provider,lat,lon,accuracy_m,state,bug")
+            writer.write("format: each update is a Bug Panel / Fix Panel line pair, separated by a dashed line")
             writer.newLine()
             writer.flush()
             recordWriter = writer
@@ -280,19 +280,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun writeLogLine(source: String, location: Location) {
+    /** Formats one panel's current location as "Bug Panel [Provider:...] [Position:...] [meter:...] [Date and Time]". */
+    private fun formatPanelLine(label: String, loc: Location?): String {
+        if (loc == null) return "$label [Provider:-] [Position:-] [meter:-] [${timeFormat.format(Date())}]"
+        return "$label [Provider:${loc.provider}] [Position:${loc.latitude},${loc.longitude}] " +
+                "[meter:${loc.accuracy}] [${timeFormat.format(Date())}]"
+    }
+
+    /** Writes the Bug/Fix panels' current state as a matched pair, so they're easy to compare in the log. */
+    private fun writeLocationPair() {
         if (!isRecording) return
-        val state = if (isOutdoor) "outdoor" else "indoor"
-        val bug = if (lastLoggedHasBug) "BUG" else "-"
-        val line = "${timeFormat.format(Date())},$source,${location.provider},${location.latitude}," +
-                "${location.longitude},${location.accuracy},$state,$bug"
+        val bug = miniLLC.getLocationBuggy()
+        val fix = miniLLC.getLocationFixed()
+        val block = "${formatPanelLine("Bug Panel", bug)}\n${formatPanelLine("Fix Panel", fix)}\n${"-".repeat(80)}"
         try {
-            recordWriter?.write(line)
+            recordWriter?.write(block)
             recordWriter?.newLine()
             recordWriter?.flush()
             pointsLogged++
-            tvRecordingStatus.text = "● Recording to ${recordFile?.name} — $pointsLogged points logged"
-            appendToLogViewer(line)
+            tvRecordingStatus.text = "● Recording to ${recordFile?.name} — $pointsLogged updates logged"
+            appendToLogViewer(block)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to write log line", e)
         }
