@@ -4,13 +4,100 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#0D1117"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <TextView
+            android:id="@+id/btnOutdoorToggle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/bg_code_toggle"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:padding="8dp"
+            android:text="🏠 Indoor"
+            android:textColor="#C9D1D9"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/btnStopRecording"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_code_toggle"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="⏹"
+            android:textColor="#C9D1D9"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/btnRecord"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_code_toggle"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="⏺"
+            android:textColor="#F85149"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/btnCodeToggleField"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_code_toggle"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="&lt;/&gt;"
+            android:textColor="#58A6FF"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/btnShare"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_code_toggle"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="⤴"
+            android:textColor="#3FB950"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvRecordingStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#161B22"
+        android:padding="6dp"
+        android:text="Not recording"
+        android:textColor="#8B949E"
+        android:textSize="11sp" />
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
         <org.osmdroid.views.MapView
-            android:id="@+id/mapCoarse"
+            android:id="@+id/mapBugField"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
@@ -23,7 +110,6 @@
             android:padding="6dp">
 
             <TextView
-                android:id="@+id/labelCoarse"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="[BUG]  FINE → lastCoarseLocation"
@@ -32,7 +118,7 @@
                 android:textSize="13sp" />
 
             <TextView
-                android:id="@+id/tvCoarseInfo"
+                android:id="@+id/tvBugFieldInfo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Waiting..."
@@ -42,37 +128,22 @@
         </LinearLayout>
 
         <ScrollView
-            android:id="@+id/codePanelBug"
+            android:id="@+id/codePanelBugField"
             android:layout_width="match_parent"
-            android:layout_height="180dp"
+            android:layout_height="160dp"
             android:layout_gravity="top"
             android:background="#0D1117"
             android:padding="10dp"
             android:visibility="gone">
 
             <TextView
-                android:id="@+id/tvCodeBug"
+                android:id="@+id/tvCodeBugField"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="monospace"
                 android:textColor="#C9D1D9"
                 android:textSize="11sp" />
         </ScrollView>
-
-        <TextView
-            android:id="@+id/btnCodeBug"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_gravity="top|end"
-            android:layout_margin="8dp"
-            android:background="@drawable/bg_code_toggle"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:text="&lt;/&gt;"
-            android:textColor="#58A6FF"
-            android:textSize="12sp"
-            android:textStyle="bold" />
     </FrameLayout>
 
     <View
@@ -86,7 +157,7 @@
         android:layout_weight="1">
 
         <org.osmdroid.views.MapView
-            android:id="@+id/mapFine"
+            android:id="@+id/mapFixField"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
@@ -99,7 +170,6 @@
             android:padding="6dp">
 
             <TextView
-                android:id="@+id/labelFine"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="[FIX]  FINE → lastFineLocation"
@@ -108,7 +178,7 @@
                 android:textSize="13sp" />
 
             <TextView
-                android:id="@+id/tvFineInfo"
+                android:id="@+id/tvFixFieldInfo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Waiting..."
@@ -118,16 +188,16 @@
         </LinearLayout>
 
         <ScrollView
-            android:id="@+id/codePanelFix"
+            android:id="@+id/codePanelFixField"
             android:layout_width="match_parent"
-            android:layout_height="180dp"
+            android:layout_height="160dp"
             android:layout_gravity="top"
             android:background="#0D1117"
             android:padding="10dp"
             android:visibility="gone">
 
             <TextView
-                android:id="@+id/tvCodeFix"
+                android:id="@+id/tvCodeFixField"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="monospace"
@@ -137,7 +207,7 @@
     </FrameLayout>
 
     <TextView
-        android:id="@+id/tvStatus"
+        android:id="@+id/tvFieldStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="8dp"
@@ -145,18 +215,4 @@
         android:textColor="#FFFFFF"
         android:textSize="12sp"
         android:text="Waiting for location..." />
-
-    <TextView
-        android:id="@+id/btnFieldTest"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="10dp"
-        android:background="#0D1117"
-        android:clickable="true"
-        android:focusable="true"
-        android:gravity="center"
-        android:text="🚶 Open Field Test (outdoor walk logging) →"
-        android:textColor="#58A6FF"
-        android:textSize="13sp"
-        android:textStyle="bold" />
 </LinearLayout>

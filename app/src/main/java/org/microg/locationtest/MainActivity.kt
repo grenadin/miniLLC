@@ -1,6 +1,7 @@
 package org.microg.locationtest
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Location
@@ -10,10 +11,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.text.SpannableStringBuilder
-import android.text.style.ForegroundColorSpan
-import android.text.style.StyleSpan
-import android.graphics.Typeface
+import android.util.Log
 import android.transition.AutoTransition
 import android.transition.TransitionManager
 import android.view.View
@@ -24,9 +22,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import org.osmdroid.config.Configuration
-import org.osmdroid.events.MapListener
-import org.osmdroid.events.ScrollEvent
-import org.osmdroid.events.ZoomEvent
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -45,7 +40,7 @@ class MainActivity : AppCompatActivity() {
 
     private val miniLLC = MiniLastLocationCapsule()
 
-    private var syncingZoom = false
+    private var lastLoggedHasBug = false
 
     private val handler = Handler(Looper.getMainLooper())
     private val tickRunnable = object : Runnable {
@@ -55,14 +50,34 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val gpsListener = LocationListener { location ->
-        miniLLC.updateFineLocation(location)
-        refreshPanels()
+    private val gpsListener = object : LocationListener {
+        override fun onLocationChanged(location: Location) {
+            Log.d(TAG, "GPS fix: lat=${location.latitude} lon=${location.longitude} " +
+                    "acc=${location.accuracy}m provider=${location.provider}")
+            miniLLC.updateFineLocation(location)
+            refreshPanels()
+        }
+        override fun onProviderEnabled(provider: String) {
+            Log.d(TAG, "GPS provider ENABLED")
+        }
+        override fun onProviderDisabled(provider: String) {
+            Log.d(TAG, "GPS provider DISABLED (signal lost / turned off)")
+        }
     }
 
-    private val networkListener = LocationListener { location ->
-        miniLLC.updateCoarseLocation(location)
-        refreshPanels()
+    private val networkListener = object : LocationListener {
+        override fun onLocationChanged(location: Location) {
+            Log.d(TAG, "NETWORK fix: lat=${location.latitude} lon=${location.longitude} " +
+                    "acc=${location.accuracy}m provider=${location.provider}")
+            miniLLC.updateCoarseLocation(location)
+            refreshPanels()
+        }
+        override fun onProviderEnabled(provider: String) {
+            Log.d(TAG, "NETWORK provider ENABLED")
+        }
+        override fun onProviderDisabled(provider: String) {
+            Log.d(TAG, "NETWORK provider DISABLED")
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,20 +93,25 @@ class MainActivity : AppCompatActivity() {
 
         setupMap(mapBug)
         setupMap(mapFix)
-        linkZoom(mapBug, mapFix)
-        linkZoom(mapFix, mapBug)
+        linkMapZoom(mapBug, mapFix)
 
         val btnCodeBug = findViewById<TextView>(R.id.btnCodeBug)
         val codePanelBug = findViewById<View>(R.id.codePanelBug)
         val tvCodeBug = findViewById<TextView>(R.id.tvCodeBug)
-        tvCodeBug.text = highlightKotlin(BUGGY_CODE)
-        btnCodeBug.setOnClickListener { toggleCodePanel(codePanelBug) }
+        tvCodeBug.text = CodeSnippets.highlightKotlin(CodeSnippets.BUGGY_CODE)
 
-        val btnCodeFix = findViewById<TextView>(R.id.btnCodeFix)
         val codePanelFix = findViewById<View>(R.id.codePanelFix)
         val tvCodeFix = findViewById<TextView>(R.id.tvCodeFix)
-        tvCodeFix.text = highlightKotlin(FIXED_CODE)
-        btnCodeFix.setOnClickListener { toggleCodePanel(codePanelFix) }
+        tvCodeFix.text = CodeSnippets.highlightKotlin(CodeSnippets.FIXED_CODE)
+
+        btnCodeBug.setOnClickListener {
+            toggleCodePanel(codePanelBug)
+            toggleCodePanel(codePanelFix)
+        }
+
+        findViewById<TextView>(R.id.btnFieldTest).setOnClickListener {
+            startActivity(Intent(this, FieldTestActivity::class.java))
+        }
 
         locationManager = getSystemService<LocationManager>()!!
 
@@ -110,21 +130,6 @@ class MainActivity : AppCompatActivity() {
         map.setTileSource(TileSourceFactory.MAPNIK)
         map.setMultiTouchControls(true)
         map.controller.setZoom(15.0)
-    }
-
-    /** Mirrors zoom level from [source] to [target] so both panels stay at the same scale. */
-    private fun linkZoom(source: MapView, target: MapView) {
-        source.addMapListener(object : MapListener {
-            override fun onScroll(event: ScrollEvent?): Boolean = false
-
-            override fun onZoom(event: ZoomEvent?): Boolean {
-                if (syncingZoom) return false
-                syncingZoom = true
-                target.controller.setZoom(source.zoomLevelDouble)
-                syncingZoom = false
-                return false
-            }
-        })
     }
 
     override fun onRequestPermissionsResult(
@@ -202,6 +207,17 @@ class MainActivity : AppCompatActivity() {
 
         val hasBug = fix != null && bug != null && bug.provider != "gps" && (fix.provider == "gps")
 
+        if (hasBug != lastLoggedHasBug) {
+            Log.d(TAG, if (hasBug) {
+                "BUG CONFIRMED: bug panel=${bug?.provider}/${bug?.accuracy}m " +
+                        "fix panel=${fix?.provider}/${fix?.accuracy}m"
+            } else {
+                "bug no longer visible: bug panel=${bug?.provider}/${bug?.accuracy}m " +
+                        "fix panel=${fix?.provider}/${fix?.accuracy}m"
+            })
+            lastLoggedHasBug = hasBug
+        }
+
         tvStatus.text = buildString {
             append("bug: ${bug?.accuracy?.toInt() ?: "?"}m (${bug?.provider})  ")
             append("fix: ${fix?.accuracy?.toInt() ?: "?"}m (${fix?.provider})\n")
@@ -233,68 +249,7 @@ class MainActivity : AppCompatActivity() {
         panel.visibility = if (panel.visibility == View.VISIBLE) View.GONE else View.VISIBLE
     }
 
-    /** Minimal Kotlin syntax highlighter, colored to match GitHub's dark theme. */
-    private fun highlightKotlin(code: String): SpannableStringBuilder {
-        val keywordColor = Color.parseColor("#FF7B72")
-        val commentColor = Color.parseColor("#8B949E")
-        val annotationColor = Color.parseColor("#D2A8FF")
-        val typeColor = Color.parseColor("#79C0FF")
-
-        val keywords = setOf(
-            "fun", "val", "var", "when", "else", "return", "private", "class",
-            "companion", "object", "const", "override", "this", "import", "package"
-        )
-
-        val builder = SpannableStringBuilder(code)
-
-        fun colorRegion(regex: Regex, color: Int, bold: Boolean = false) {
-            for (match in regex.findAll(code)) {
-                builder.setSpan(ForegroundColorSpan(color), match.range.first, match.range.last + 1, 0)
-                if (bold) builder.setSpan(StyleSpan(Typeface.BOLD), match.range.first, match.range.last + 1, 0)
-            }
-        }
-
-        colorRegion(Regex("//[^\\n]*"), commentColor)
-        colorRegion(Regex("@\\w+"), annotationColor)
-        colorRegion(Regex("\\b[A-Z][A-Za-z0-9_]*\\b"), typeColor)
-        for (keyword in keywords) {
-            colorRegion(Regex("\\b$keyword\\b"), keywordColor, bold = true)
-        }
-
-        return builder
-    }
-
     companion object {
-        private const val BUGGY_CODE = """// LastLocationCapsule.kt (microg/GmsCore)
-fun getLocation(
-    effectiveGranularity: @Granularity Int
-): Location? {
-    val location = when (effectiveGranularity) {
-        GRANULARITY_COARSE -> lastCoarseLocationTimeCoarsed
-        GRANULARITY_FINE -> lastCoarseLocation
-        else -> return null
-    } ?: return null
-    ...
-}
-
-// lastCoarseLocation is updated by BOTH gps and
-// network fixes -> FINE granularity leaks
-// network-level accuracy even with a fresh GPS fix."""
-
-        private const val FIXED_CODE = """// LastLocationCapsule.kt (proposed fix)
-fun getLocation(
-    effectiveGranularity: @Granularity Int
-): Location? {
-    val location = when (effectiveGranularity) {
-        GRANULARITY_COARSE -> lastCoarseLocationTimeCoarsed
-        GRANULARITY_FINE -> lastFineLocation
-        else -> return null
-    } ?: return null
-    ...
-}
-
-// lastFineLocation is updated ONLY by GPS fixes
-// via updateFineLocation() -> FINE granularity
-// now correctly returns the GPS-only location."""
+        const val TAG = "miniLLC"
     }
 }

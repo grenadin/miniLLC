@@ -1,5 +1,8 @@
 miniLLChandoff.md
 context.md
+debug_*.txt
+debug_*.png
+field-test-logs/
 
 *.iml
 .gradle/
