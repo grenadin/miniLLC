@@ -246,7 +246,7 @@ class MainActivity : AppCompatActivity() {
             val writer = BufferedWriter(FileWriter(file))
             writer.write("miniLLC field test log — device=${android.os.Build.MODEL} start=${timeFormat.format(Date())}")
             writer.newLine()
-            writer.write("format: each update is a Bug Panel / Fix Panel line pair, separated by a dashed line")
+            writer.write("format: each update is a lastCoarseLocation / lastFineLocation line pair, separated by a dashed line")
             writer.newLine()
             writer.flush()
             recordWriter = writer
@@ -333,19 +333,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** Formats one panel's current location as "Bug Panel [Provider:...] [Position:...] [meter:...] [Date and Time]". */
+    /** Formats one panel's current location as "lastCoarseLocation [Provider:...] [Position:...] [meter:...] [Date and Time]". */
     private fun formatPanelLine(label: String, loc: Location?): String {
         if (loc == null) return "$label [Provider:-] [Position:-] [meter:-] [${timeFormat.format(Date())}]"
         return "$label [Provider:${loc.provider}] [Position:${loc.latitude},${loc.longitude}] " +
                 "[meter:${loc.accuracy}] [${timeFormat.format(Date())}]"
     }
 
-    /** Writes the Bug/Fix panels' current state as a matched pair, so they're easy to compare in the log. */
+    /** Writes the lastCoarseLocation/lastFineLocation panels' current state as a matched pair, so they're easy to compare in the log. */
     private fun writeLocationPair() {
         if (!isRecording) return
         val bug = miniLLC.getLocationBuggy()
         val fix = miniLLC.getLocationFixed()
-        val block = "${formatPanelLine("Bug Panel", bug)}\n${formatPanelLine("Fix Panel", fix)}\n${"-".repeat(80)}"
+        val block = "${formatPanelLine("lastCoarseLocation", bug)}\n${formatPanelLine("lastFineLocation", fix)}\n${"-".repeat(80)}"
         try {
             recordWriter?.write(block)
             recordWriter?.newLine()
@@ -439,14 +439,14 @@ class MainActivity : AppCompatActivity() {
         lastLoggedHasBug = hasBug
 
         tvStatus.text = buildString {
-            append("bug: ${bug?.accuracy?.toInt() ?: "?"}m (${bug?.provider})  ")
-            append("fix: ${fix?.accuracy?.toInt() ?: "?"}m (${fix?.provider})\n")
+            append("lastCoarseLocation: ${bug?.accuracy?.toInt() ?: "?"}m (${bug?.provider})  ")
+            append("lastFineLocation: ${fix?.accuracy?.toInt() ?: "?"}m (${fix?.provider})\n")
             if (hasBug) {
-                append("BUG CONFIRMED: fix panel got GPS (${fix!!.accuracy.toInt()}m) but bug panel still shows network")
+                append("lastFineLocation has a GPS fix (${fix!!.accuracy.toInt()}m) while lastCoarseLocation still shows network")
             } else if (fix?.provider == "gps" && bug?.provider == "gps") {
-                append("Both have GPS fix — bug not visible yet (network fix hasn't arrived)")
+                append("Both currently show GPS — divergence not visible yet (no network fix received)")
             } else {
-                append("%.1fs since bug update  |  %.1fs since fix update".format(bugAge ?: 0.0, fixAge ?: 0.0))
+                append("%.1fs since lastCoarseLocation update  |  %.1fs since lastFineLocation update".format(bugAge ?: 0.0, fixAge ?: 0.0))
             }
         }
         tvStatus.setBackgroundColor(if (hasBug) Color.parseColor("#B71C1C") else Color.parseColor("#212121"))

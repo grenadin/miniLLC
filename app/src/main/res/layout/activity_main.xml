@@ -158,7 +158,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="[BUG]  FINE → lastCoarseLocation"
+                        android:text="GRANULARITY_FINE → lastCoarseLocation"
                         android:textColor="#FF7043"
                         android:textStyle="bold"
                         android:textSize="13sp" />
@@ -263,7 +263,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="[FIX]  FINE → lastFineLocation"
+                        android:text="GRANULARITY_FINE → lastFineLocation"
                         android:textColor="#66BB6A"
                         android:textStyle="bold"
                         android:textSize="13sp" />
