@@ -16,6 +16,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import org.osmdroid.config.Configuration
+import org.osmdroid.events.MapListener
+import org.osmdroid.events.ScrollEvent
+import org.osmdroid.events.ZoomEvent
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -33,6 +36,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var locationManager: LocationManager
 
     private val miniLLC = MiniLastLocationCapsule()
+
+    private var syncingZoom = false
 
     private val handler = Handler(Looper.getMainLooper())
     private val tickRunnable = object : Runnable {
@@ -65,6 +70,8 @@ class MainActivity : AppCompatActivity() {
 
         setupMap(mapBug)
         setupMap(mapFix)
+        linkZoom(mapBug, mapFix)
+        linkZoom(mapFix, mapBug)
 
         locationManager = getSystemService<LocationManager>()!!
 
@@ -83,6 +90,21 @@ class MainActivity : AppCompatActivity() {
         map.setTileSource(TileSourceFactory.MAPNIK)
         map.setMultiTouchControls(true)
         map.controller.setZoom(15.0)
+    }
+
+    /** Mirrors zoom level from [source] to [target] so both panels stay at the same scale. */
+    private fun linkZoom(source: MapView, target: MapView) {
+        source.addMapListener(object : MapListener {
+            override fun onScroll(event: ScrollEvent?): Boolean = false
+
+            override fun onZoom(event: ZoomEvent?): Boolean {
+                if (syncingZoom) return false
+                syncingZoom = true
+                target.controller.setZoom(source.zoomLevelDouble)
+                syncingZoom = false
+                return false
+            }
+        })
     }
 
     override fun onRequestPermissionsResult(
