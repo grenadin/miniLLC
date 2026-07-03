@@ -41,21 +41,6 @@
                 android:textSize="11sp" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/btnCodeBug"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_gravity="top|end"
-            android:layout_margin="8dp"
-            android:background="@drawable/bg_code_toggle"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:text="&lt;/&gt;"
-            android:textColor="#58A6FF"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
         <ScrollView
             android:id="@+id/codePanelBug"
             android:layout_width="match_parent"
@@ -73,6 +58,21 @@
                 android:textColor="#C9D1D9"
                 android:textSize="11sp" />
         </ScrollView>
+
+        <TextView
+            android:id="@+id/btnCodeBug"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="top|end"
+            android:layout_margin="8dp"
+            android:background="@drawable/bg_code_toggle"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="&lt;/&gt;"
+            android:textColor="#58A6FF"
+            android:textSize="12sp"
+            android:textStyle="bold" />
     </FrameLayout>
 
     <View
@@ -117,21 +117,6 @@
                 android:textSize="11sp" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/btnCodeFix"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_gravity="top|end"
-            android:layout_margin="8dp"
-            android:background="@drawable/bg_code_toggle"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:text="&lt;/&gt;"
-            android:textColor="#58A6FF"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
         <ScrollView
             android:id="@+id/codePanelFix"
             android:layout_width="match_parent"
@@ -149,6 +134,21 @@
                 android:textColor="#C9D1D9"
                 android:textSize="11sp" />
         </ScrollView>
+
+        <TextView
+            android:id="@+id/btnCodeFix"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="top|end"
+            android:layout_margin="8dp"
+            android:background="@drawable/bg_code_toggle"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="&lt;/&gt;"
+            android:textColor="#58A6FF"
+            android:textSize="12sp"
+            android:textStyle="bold" />
     </FrameLayout>
 
     <TextView
