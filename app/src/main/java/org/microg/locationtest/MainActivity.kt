@@ -10,6 +10,14 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
+import android.graphics.Typeface
+import android.transition.AutoTransition
+import android.transition.TransitionManager
+import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -72,6 +80,18 @@ class MainActivity : AppCompatActivity() {
         setupMap(mapFix)
         linkZoom(mapBug, mapFix)
         linkZoom(mapFix, mapBug)
+
+        val btnCodeBug = findViewById<TextView>(R.id.btnCodeBug)
+        val codePanelBug = findViewById<View>(R.id.codePanelBug)
+        val tvCodeBug = findViewById<TextView>(R.id.tvCodeBug)
+        tvCodeBug.text = highlightKotlin(BUGGY_CODE)
+        btnCodeBug.setOnClickListener { toggleCodePanel(codePanelBug) }
+
+        val btnCodeFix = findViewById<TextView>(R.id.btnCodeFix)
+        val codePanelFix = findViewById<View>(R.id.codePanelFix)
+        val tvCodeFix = findViewById<TextView>(R.id.tvCodeFix)
+        tvCodeFix.text = highlightKotlin(FIXED_CODE)
+        btnCodeFix.setOnClickListener { toggleCodePanel(codePanelFix) }
 
         locationManager = getSystemService<LocationManager>()!!
 
@@ -204,5 +224,77 @@ class MainActivity : AppCompatActivity() {
         handler.removeCallbacks(tickRunnable)
         locationManager.removeUpdates(gpsListener)
         locationManager.removeUpdates(networkListener)
+    }
+
+    /** Toggles [panel] visibility with a GitHub-modal-like expand/collapse animation. */
+    private fun toggleCodePanel(panel: View) {
+        val root = panel.parent as ViewGroup
+        TransitionManager.beginDelayedTransition(root, AutoTransition())
+        panel.visibility = if (panel.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+    }
+
+    /** Minimal Kotlin syntax highlighter, colored to match GitHub's dark theme. */
+    private fun highlightKotlin(code: String): SpannableStringBuilder {
+        val keywordColor = Color.parseColor("#FF7B72")
+        val commentColor = Color.parseColor("#8B949E")
+        val annotationColor = Color.parseColor("#D2A8FF")
+        val typeColor = Color.parseColor("#79C0FF")
+
+        val keywords = setOf(
+            "fun", "val", "var", "when", "else", "return", "private", "class",
+            "companion", "object", "const", "override", "this", "import", "package"
+        )
+
+        val builder = SpannableStringBuilder(code)
+
+        fun colorRegion(regex: Regex, color: Int, bold: Boolean = false) {
+            for (match in regex.findAll(code)) {
+                builder.setSpan(ForegroundColorSpan(color), match.range.first, match.range.last + 1, 0)
+                if (bold) builder.setSpan(StyleSpan(Typeface.BOLD), match.range.first, match.range.last + 1, 0)
+            }
+        }
+
+        colorRegion(Regex("//[^\\n]*"), commentColor)
+        colorRegion(Regex("@\\w+"), annotationColor)
+        colorRegion(Regex("\\b[A-Z][A-Za-z0-9_]*\\b"), typeColor)
+        for (keyword in keywords) {
+            colorRegion(Regex("\\b$keyword\\b"), keywordColor, bold = true)
+        }
+
+        return builder
+    }
+
+    companion object {
+        private const val BUGGY_CODE = """// LastLocationCapsule.kt (microg/GmsCore)
+fun getLocation(
+    effectiveGranularity: @Granularity Int
+): Location? {
+    val location = when (effectiveGranularity) {
+        GRANULARITY_COARSE -> lastCoarseLocationTimeCoarsed
+        GRANULARITY_FINE -> lastCoarseLocation
+        else -> return null
+    } ?: return null
+    ...
+}
+
+// lastCoarseLocation is updated by BOTH gps and
+// network fixes -> FINE granularity leaks
+// network-level accuracy even with a fresh GPS fix."""
+
+        private const val FIXED_CODE = """// LastLocationCapsule.kt (proposed fix)
+fun getLocation(
+    effectiveGranularity: @Granularity Int
+): Location? {
+    val location = when (effectiveGranularity) {
+        GRANULARITY_COARSE -> lastCoarseLocationTimeCoarsed
+        GRANULARITY_FINE -> lastFineLocation
+        else -> return null
+    } ?: return null
+    ...
+}
+
+// lastFineLocation is updated ONLY by GPS fixes
+// via updateFineLocation() -> FINE granularity
+// now correctly returns the GPS-only location."""
     }
 }

@@ -40,6 +40,39 @@
                 android:fontFamily="monospace"
                 android:textSize="11sp" />
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/btnCodeBug"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="top|end"
+            android:layout_margin="8dp"
+            android:background="@drawable/bg_code_toggle"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="&lt;/&gt;"
+            android:textColor="#58A6FF"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <ScrollView
+            android:id="@+id/codePanelBug"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:layout_gravity="top"
+            android:background="#0D1117"
+            android:padding="10dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvCodeBug"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:textColor="#C9D1D9"
+                android:textSize="11sp" />
+        </ScrollView>
     </FrameLayout>
 
     <View
@@ -83,6 +116,39 @@
                 android:fontFamily="monospace"
                 android:textSize="11sp" />
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/btnCodeFix"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="top|end"
+            android:layout_margin="8dp"
+            android:background="@drawable/bg_code_toggle"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="&lt;/&gt;"
+            android:textColor="#58A6FF"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <ScrollView
+            android:id="@+id/codePanelFix"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:layout_gravity="top"
+            android:background="#0D1117"
+            android:padding="10dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvCodeFix"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:textColor="#C9D1D9"
+                android:textSize="11sp" />
+        </ScrollView>
     </FrameLayout>
 
     <TextView
